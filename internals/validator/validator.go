@@ -46,6 +46,7 @@ func Matches(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
 }
 
+// test comment
 func Unique(values []string) bool {
 	uniqueValues := make(map[string]bool)
 

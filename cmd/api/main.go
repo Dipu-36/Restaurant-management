@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 const version = "1.0.0"
@@ -51,6 +53,7 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-maxidle-time", "15m", "PostgreSQL max connection idle time")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("RESTAURANT_DB_DSN"), "PostgreSql DSN")
 
 	flag.Parse()
 

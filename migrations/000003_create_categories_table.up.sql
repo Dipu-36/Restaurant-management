@@ -1,0 +1,14 @@
+CREATE TABLE IF NOT EXISTS categories (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    name TEXT NOT NULL UNIQUE,
+
+    display_order INTEGER NOT NULL DEFAULT 0,
+
+    version INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX idx_categories_name
+ON categories(name);

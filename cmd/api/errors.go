@@ -44,3 +44,76 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 	errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
+
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	message := "unable to update the record due to an edit conflict, please try again"
+
+	err := app.writeJSON(
+		w,
+		http.StatusConflict,
+		envelope{
+			"error": message,
+		},
+		nil,
+	)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *http.Request) {
+
+	message := "invalid authentication credentials"
+
+	err := app.writeJSON(
+		w,
+		http.StatusUnauthorized,
+		envelope{
+			"error": message,
+		},
+		nil,
+	)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("WWW-Authenticate", "Bearer")
+
+	message := "invalid or missing authentication token"
+
+	err := app.writeJSON(
+		w,
+		http.StatusUnauthorized,
+		envelope{
+			"error": message,
+		},
+		nil,
+	)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.Request) {
+
+	message := "your user account must be activated to access this resource"
+
+	err := app.writeJSON(
+		w,
+		http.StatusForbidden,
+		envelope{
+			"error": message,
+		},
+		nil,
+	)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

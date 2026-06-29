@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 const (
@@ -64,10 +66,24 @@ type UserModel struct {
 }
 
 func (m UserModel) Insert(user *User) error {
+
 	query := `
-		INSERT INTO users (name, email, password_hash, phone, address, role, activated)
-		VALUES ($1,$2,$3,$4,$5,$6,$7)
-		RETURNING id, created_at, version`
+		INSERT INTO users
+		(
+			name,
+			email,
+			password_hash,
+			phone,
+			address,
+			role,
+			activated
+		)
+		VALUES
+		(
+			$1,$2,$3,$4,$5,$6,$7
+		)
+		RETURNING id, created_at, version
+	`
 
 	args := []interface{}{
 		user.Name,
@@ -79,11 +95,26 @@ func (m UserModel) Insert(user *User) error {
 		user.Activated,
 	}
 
-	return m.DB.QueryRow(query, args...).Scan(
+	err := m.DB.QueryRow(query, args...).Scan(
 		&user.ID,
 		&user.CreatedAt,
 		&user.Version,
 	)
+
+	if err != nil {
+
+		var pqErr *pq.Error
+
+		if errors.As(err, &pqErr) {
+			if pqErr.Code == "23505" {
+				return ErrDuplicateEmail
+			}
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func (m UserModel) Get(id int64) (*User, error) {
@@ -216,6 +247,38 @@ func (m UserModel) Delete(id int64) error {
 	if rowsAffected == 0 {
 		return ErrRecordNotFound
 	}
+
+	return nil
+}
+
+func (m UserModel) Activate(user *User) error {
+
+	query := `
+		UPDATE users
+		SET
+			activated = TRUE,
+			version = version + 1
+		WHERE id = $1
+		AND version = $2
+		RETURNING version
+	`
+
+	err := m.DB.QueryRow(
+		query,
+		user.ID,
+		user.Version,
+	).Scan(&user.Version)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	user.Activated = true
 
 	return nil
 }

@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// Order Status
+	// Order OrderStatus
 	OrderStatusPending   = "pending"
 	OrderStatusPreparing = "preparing"
 	OrderStatusReady     = "ready"
@@ -18,26 +18,13 @@ const (
 	// Order Type
 	OrderTypeDelivery = "delivery"
 	OrderTypePickup   = "pickup"
-
-	// Payment Status
-	PaymentStatusPending  = "pending"
-	PaymentStatusPaid     = "paid"
-	PaymentStatusFailed   = "failed"
-	PaymentStatusRefunded = "refunded"
-
-	// Payment Method
-	PaymentMethodCard      = "card"
-	PaymentMethodApplePay  = "apple_pay"
-	PaymentMethodGooglePay = "google_pay"
-	PaymentMethodPayPal    = "paypal"
-	PaymentMethodCash      = "cash"
 )
 
 type Order struct {
 	ID                int64     `json:"id"`
 	CreatedAt         time.Time `json:"created_at"`
 	CustomerID        int64     `json:"customer_id"`
-	Status            string    `json:"status"`
+	OrderStatus       string    `json:"status"`
 	OrderType         string    `json:"order_type"`
 	DeliveryAddressID int64     `json:"delivery_address_id,omitempty"`
 	PickupTime        time.Time `json:"pickup_time,omitempty"`
@@ -45,8 +32,6 @@ type Order struct {
 	DeliveryFee       int64     `json:"delivery_fee"`
 	Tax               int64     `json:"tax"`
 	Total             int64     `json:"total"`
-	PaymentStatus     string    `json:"payment_status"`
-	PaymentMethod     string    `json:"payment_method"`
 	Version           int32     `json:"version"`
 }
 
@@ -60,7 +45,7 @@ func ValidateOrder(v *validator.Validator, order *Order) {
 
 	v.Check(
 		validator.In(
-			order.Status,
+			order.OrderStatus,
 			OrderStatusPending,
 			OrderStatusPreparing,
 			OrderStatusReady,
@@ -138,31 +123,6 @@ func ValidateOrder(v *validator.Validator, order *Order) {
 		"total",
 		"must equal subtotal + delivery fee + tax",
 	)
-
-	v.Check(
-		validator.In(
-			order.PaymentStatus,
-			PaymentStatusPending,
-			PaymentStatusPaid,
-			PaymentStatusFailed,
-			PaymentStatusRefunded,
-		),
-		"payment_status",
-		"must contain a valid payment status",
-	)
-
-	v.Check(
-		validator.In(
-			order.PaymentMethod,
-			PaymentMethodCard,
-			PaymentMethodApplePay,
-			PaymentMethodGooglePay,
-			PaymentMethodPayPal,
-			PaymentMethodCash,
-		),
-		"payment_method",
-		"must contain a valid payment method",
-	)
 }
 
 type OrderModel struct {
@@ -172,7 +132,7 @@ type OrderModel struct {
 func (m OrderModel) Insert(order *Order) error {
 
 	query := `
-		INSERT INTO orders (
+			INSERT INTO orders (
 			customer_id,
 			status,
 			order_type,
@@ -181,21 +141,18 @@ func (m OrderModel) Insert(order *Order) error {
 			subtotal,
 			delivery_fee,
 			tax,
-			total,
-			payment_status,
-			payment_method
+			total
 		)
 		VALUES (
 			$1,$2,$3,$4,$5,
-			$6,$7,$8,$9,
-			$10,$11
+			$6,$7,$8,$9
 		)
 		RETURNING id, created_at, version
 	`
 
 	args := []interface{}{
 		order.CustomerID,
-		order.Status,
+		order.OrderStatus,
 		order.OrderType,
 		order.DeliveryAddressID,
 		order.PickupTime,
@@ -203,8 +160,6 @@ func (m OrderModel) Insert(order *Order) error {
 		order.DeliveryFee,
 		order.Tax,
 		order.Total,
-		order.PaymentStatus,
-		order.PaymentMethod,
 	}
 
 	return m.DB.QueryRow(query, args...).Scan(
@@ -232,8 +187,6 @@ func (m OrderModel) Get(id int64) (*Order, error) {
 			delivery_fee,
 			tax,
 			total,
-			payment_status,
-			payment_method,
 			version
 		FROM orders
 		WHERE id = $1
@@ -245,7 +198,7 @@ func (m OrderModel) Get(id int64) (*Order, error) {
 		&order.ID,
 		&order.CreatedAt,
 		&order.CustomerID,
-		&order.Status,
+		&order.OrderStatus,
 		&order.OrderType,
 		&order.DeliveryAddressID,
 		&order.PickupTime,
@@ -253,8 +206,6 @@ func (m OrderModel) Get(id int64) (*Order, error) {
 		&order.DeliveryFee,
 		&order.Tax,
 		&order.Total,
-		&order.PaymentStatus,
-		&order.PaymentMethod,
 		&order.Version,
 	)
 
@@ -282,7 +233,7 @@ func (m OrderModel) UpdateStatus(order *Order) error {
 	`
 
 	args := []interface{}{
-		order.Status,
+		order.OrderStatus,
 		order.ID,
 		order.Version,
 	}
@@ -296,66 +247,6 @@ func (m OrderModel) UpdateStatus(order *Order) error {
 		default:
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (m OrderModel) UpdatePayment(order *Order) error {
-	query := `
-		UPDATE orders
-		SET
-			payment_status = $1,
-			payment_method = $2,
-			version = version + 1
-		WHERE id = $3
-		AND version = $4
-		RETURNING version
-	`
-
-	args := []interface{}{
-		order.PaymentStatus,
-		order.PaymentMethod,
-		order.ID,
-		order.Version,
-	}
-
-	err := m.DB.QueryRow(query, args...).Scan(&order.Version)
-
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return ErrEditConflict
-		default:
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (m OrderModel) Delete(id int64) error {
-	if id < 1 {
-		return ErrRecordNotFound
-	}
-
-	query := `
-		DELETE FROM orders
-		WHERE id = $1
-	`
-
-	result, err := m.DB.Exec(query, id)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return ErrRecordNotFound
 	}
 
 	return nil
@@ -376,8 +267,6 @@ func (m OrderModel) GetCustomerOrders(customerID int64) ([]*Order, error) {
 			delivery_fee,
 			tax,
 			total,
-			payment_status,
-			payment_method,
 			version
 		FROM orders
 		WHERE customer_id = $1
@@ -399,7 +288,7 @@ func (m OrderModel) GetCustomerOrders(customerID int64) ([]*Order, error) {
 			&order.ID,
 			&order.CreatedAt,
 			&order.CustomerID,
-			&order.Status,
+			&order.OrderStatus,
 			&order.OrderType,
 			&order.DeliveryAddressID,
 			&order.PickupTime,
@@ -407,8 +296,6 @@ func (m OrderModel) GetCustomerOrders(customerID int64) ([]*Order, error) {
 			&order.DeliveryFee,
 			&order.Tax,
 			&order.Total,
-			&order.PaymentStatus,
-			&order.PaymentMethod,
 			&order.Version,
 		)
 		if err != nil {
@@ -440,8 +327,6 @@ func (m OrderModel) GetAll(status string) ([]*Order, error) {
 			delivery_fee,
 			tax,
 			total,
-			payment_status,
-			payment_method,
 			version
 		FROM orders
 		WHERE ($1 = '' OR status = $1)
@@ -463,7 +348,7 @@ func (m OrderModel) GetAll(status string) ([]*Order, error) {
 			&order.ID,
 			&order.CreatedAt,
 			&order.CustomerID,
-			&order.Status,
+			&order.OrderStatus,
 			&order.OrderType,
 			&order.DeliveryAddressID,
 			&order.PickupTime,
@@ -471,8 +356,6 @@ func (m OrderModel) GetAll(status string) ([]*Order, error) {
 			&order.DeliveryFee,
 			&order.Tax,
 			&order.Total,
-			&order.PaymentStatus,
-			&order.PaymentMethod,
 			&order.Version,
 		)
 		if err != nil {

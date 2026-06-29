@@ -1,6 +1,10 @@
 package main
 
 import (
+	"Dipu-36/restaurant/internals/auth"
+	"Dipu-36/restaurant/internals/data"
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -14,11 +18,22 @@ const version = "1.0.0"
 type config struct {
 	port int
 	env  string
+	db   struct {
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  string
+	}
+	jwt struct {
+		secret string
+	}
 }
 
 type application struct {
-	config config
-	logger *log.Logger
+	config     config
+	logger     *log.Logger
+	models     data.Models
+	jwtManager *auth.JWTManager
 }
 
 func main() {
@@ -31,6 +46,12 @@ func main() {
 	// 3rd param is thedefault value and the last param is the helper text shown when -help is used
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Envirionment (development | staging | deployment)")
+	flag.StringVar(&cfg.jwt.secret, "jwt-secret", "change-this-secret-in-production", "JWT signing secret")
+
+	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostreSQL max open connections")
+	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
+	flag.StringVar(&cfg.db.maxIdleTime, "db-maxidle-time", "15m", "PostgreSQL max connection idle time")
+
 	flag.Parse()
 
 	// the 1st param is the destination where the logs will be written
@@ -38,9 +59,24 @@ func main() {
 	// 3rd param auto prepends time and date beofre the msg
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
+	db, err := openDB(cfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	defer db.Close()
+
+	logger.Printf("database connection pool established")
+
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
+		jwtManager: &auth.JWTManager{
+			SecretKey: []byte(cfg.jwt.secret),
+			Issuer:    "restaurant-api",
+			TTL:       24 * time.Hour,
+		},
 	}
 
 	srv := &http.Server{
@@ -53,7 +89,48 @@ func main() {
 
 	logger.Printf("Starting %s server on %d:", cfg.env, cfg.port)
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Fatal(err)
 
+}
+
+// openDB() helper returns a sql.DB connection pool
+func openDB(cfg config) (*sql.DB, error) {
+	// Use sq.Open() to create an empty conection pool using the DSN from the config struct
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the maximum number of open connections in pool passing a value
+	// less than or equal than to 0 will mean there is no limit
+	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+
+	// set themaximum number of idle connections in the pool Again passing a value
+	// less than or equal to 0 will mean there is no limit
+	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+
+	// Use the time.ParseDuration() function to convert the idle timeout duration
+	// string to a time.Duration type
+	duration, err := time.ParseDuration(cfg.db.maxIdleTime)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the maximum idle timeout
+	db.SetConnMaxIdleTime(duration)
+
+	// a context with 5 second timeout deadline
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Using PingContext() to establish a new connection to the Database passing in the conetext we
+	// created above as a parameter, if the connection couldn't be established succesfully within
+	// the 5 second timeout deadline then this will return an error
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

@@ -104,3 +104,54 @@ func (m TokenModel) DeleteAllForUser(scope string, userID int64) error {
 
 	return err
 }
+
+func (m TokenModel) Get(scope, plaintextToken string) (*Token, error) {
+
+	hash := sha256.Sum256([]byte(plaintextToken))
+
+	query := `
+		SELECT
+			hash,
+			user_id,
+			expiry,
+			scope
+		FROM tokens
+		WHERE hash = $1
+		AND scope = $2
+		AND expiry > NOW()
+	`
+
+	var token Token
+
+	err := m.DB.QueryRow(query, hash[:], scope).Scan(
+		&token.Hash,
+		&token.UserID,
+		&token.Expiry,
+		&token.Scope,
+	)
+
+	if err != nil {
+		switch {
+		case err == sql.ErrNoRows:
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	token.Plaintext = plaintextToken
+
+	return &token, nil
+}
+
+func (m TokenModel) DeleteExpiredTokens() error {
+
+	query := `
+		DELETE FROM tokens
+		WHERE expiry < NOW()
+	`
+
+	_, err := m.DB.Exec(query)
+
+	return err
+}

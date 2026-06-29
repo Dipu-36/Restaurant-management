@@ -2,13 +2,9 @@ package data
 
 import (
 	"Dipu-36/restaurant/internals/validator"
-	"crypto/rand"
-	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
-
-	"golang.org/x/crypto/argon2"
 )
 
 const (
@@ -26,64 +22,6 @@ type User struct {
 	Activated bool      `json:"activated"`
 	Version   int32     `json:"version"`
 	Password  password  `json:"-"`
-}
-
-type password struct {
-	plaintext *string
-	hash      []byte
-}
-
-func (p *password) Set(plaintext string) error {
-	hash, err := generatePasswordHash(plaintext)
-	if err != nil {
-		return err
-	}
-
-	p.plaintext = &plaintext
-	p.hash = hash
-
-	return nil
-}
-
-func (p *password) Matches(plaintext string) (bool, error) {
-	hash, err := generatePasswordHash(plaintext)
-	if err != nil {
-		return false, err
-	}
-
-	if len(hash) != len(p.hash) {
-		return false, nil
-	}
-
-	for i := range hash {
-		if hash[i] != p.hash[i] {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
-func generatePasswordHash(password string) ([]byte, error) {
-	salt := make([]byte, 16)
-
-	_, err := rand.Read(salt)
-	if err != nil {
-		return nil, err
-	}
-
-	hash := argon2.IDKey(
-		[]byte(password),
-		salt,
-		1,
-		64*1024,
-		4,
-		32,
-	)
-
-	sum := sha256.Sum256(append(salt, hash...))
-
-	return sum[:], nil
 }
 
 func ValidateEmail(v *validator.Validator, email string) {
@@ -232,6 +170,7 @@ func (m UserModel) Update(user *User) error {
 		    activated = $7,
 		    version = version + 1
 		WHERE id = $8
+		AND version = $9
 		RETURNING version`
 
 	args := []interface{}{
@@ -243,9 +182,20 @@ func (m UserModel) Update(user *User) error {
 		user.Role,
 		user.Activated,
 		user.ID,
+		user.Version,
+	}
+	err := m.DB.QueryRow(query, args...).Scan(&user.Version)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
 	}
 
-	return m.DB.QueryRow(query, args...).Scan(&user.Version)
+	return nil
 }
 
 func (m UserModel) Delete(id int64) error {

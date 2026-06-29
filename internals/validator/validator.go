@@ -1,12 +1,15 @@
 package validator
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 // sanity check for the checkgn the format of the email address
 // this regular expression has been taken from https://html.spec.whatwg.org/#valid-e-mail-address
 var (
-	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}i" +
-		"[a-zA-Z0-9])?(?:\\. [a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+	EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}" +
+		"[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 )
 
 type Validator struct {
@@ -46,7 +49,6 @@ func Matches(value string, rx *regexp.Regexp) bool {
 	return rx.MatchString(value)
 }
 
-// test comment
 func Unique(values []string) bool {
 	uniqueValues := make(map[string]bool)
 
@@ -54,4 +56,29 @@ func Unique(values []string) bool {
 		uniqueValues[value] = true
 	}
 	return len(values) == len(uniqueValues)
+}
+
+func MinChars(value string, n int) bool {
+	return len(value) >= n
+}
+
+func MaxChars(value string, n int) bool {
+	return len(value) <= n
+}
+
+func NotBlank(value string) bool {
+	return strings.TrimSpace(value) != ""
+}
+
+func IsDigits(value string) bool {
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+func Between(value, min, max int) bool {
+	return value >= min && value <= max
 }

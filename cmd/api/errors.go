@@ -36,7 +36,7 @@ func (app *application) methodNotAllowed(w http.ResponseWriter, r *http.Request)
 	app.errorResponse(w, r, http.StatusBadRequest, message)
 }
 
-func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err error) {
+func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 

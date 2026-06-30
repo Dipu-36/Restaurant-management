@@ -9,7 +9,6 @@ import (
 
 type updateRestaurantInput struct {
 	Name           *string `json:"name"`
-	Description    *string `json:"description"`
 	Email          *string `json:"email"`
 	Phone          *string `json:"phone"`
 	StreetAddress  *string `json:"street_address"`
@@ -59,10 +58,6 @@ func (app *application) updateRestaurantHandler(w http.ResponseWriter, r *http.R
 
 	if input.Name != nil {
 		restaurant.Name = *input.Name
-	}
-
-	if input.Description != nil {
-		restaurant.Description = *input.Description
 	}
 
 	if input.Email != nil {

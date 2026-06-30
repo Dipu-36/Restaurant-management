@@ -13,7 +13,7 @@ type Dish struct {
 	CreatedAt       time.Time `json:"created_at"`
 	Name            string    `json:"name"`
 	Description     string    `json:"description"`
-	Price           float64   `json:"price"`
+	Price           int64     `json:"price"`
 	CategoryID      int64     `json:"category_id"`
 	ImageURL        string    `json:"image_url,omitempty"`
 	IsAvailable     bool      `json:"is_available"`

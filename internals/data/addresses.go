@@ -183,3 +183,141 @@ func (m AddressModel) Update(address *Address) error {
 
 	return nil
 }
+
+func (m AddressModel) Get(id int64) (*Address, error) {
+
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT
+			id,
+			created_at,
+			customer_id,
+			street_line_1,
+			street_line_2,
+			city,
+			state,
+			postal_code,
+			country,
+			is_default,
+			version
+		FROM addresses
+		WHERE id = $1
+	`
+
+	var address Address
+
+	err := m.DB.QueryRow(query, id).Scan(
+		&address.ID,
+		&address.CreatedAt,
+		&address.CustomerID,
+		&address.StreetLine1,
+		&address.StreetLine2,
+		&address.City,
+		&address.State,
+		&address.PostalCode,
+		&address.Country,
+		&address.IsDefault,
+		&address.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &address, nil
+}
+
+func (m AddressModel) GetAll(customerID int64) ([]*Address, error) {
+
+	query := `
+		SELECT
+			id,
+			created_at,
+			customer_id,
+			street_line_1,
+			street_line_2,
+			city,
+			state,
+			postal_code,
+			country,
+			is_default,
+			version
+		FROM addresses
+		WHERE customer_id = $1
+		ORDER BY is_default DESC, created_at ASC
+	`
+
+	rows, err := m.DB.Query(query, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	addresses := []*Address{}
+
+	for rows.Next() {
+
+		var address Address
+
+		err := rows.Scan(
+			&address.ID,
+			&address.CreatedAt,
+			&address.CustomerID,
+			&address.StreetLine1,
+			&address.StreetLine2,
+			&address.City,
+			&address.State,
+			&address.PostalCode,
+			&address.Country,
+			&address.IsDefault,
+			&address.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		addresses = append(addresses, &address)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return addresses, nil
+}
+
+func (m AddressModel) Delete(id int64) error {
+
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `
+		DELETE FROM addresses
+		WHERE id = $1
+	`
+
+	result, err := m.DB.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+}

@@ -41,6 +41,28 @@ func (app *application) routes() *httprouter.Router {
 	// Owner Routes
 	// -------------------------------------------------------------------------
 
+	// Restaurant
+	router.Handler(
+		http.MethodGet,
+		"/v1/restaurant",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.getRestaurantHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodPatch,
+		"/v1/restaurant",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.updateRestaurantHandler),
+			),
+		),
+	)
+
+	// Categories
 	router.Handler(
 		http.MethodPost,
 		"/v1/categories",
@@ -52,6 +74,75 @@ func (app *application) routes() *httprouter.Router {
 	)
 
 	router.Handler(
+		http.MethodGet,
+		"/v1/categories",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.listCategoriesHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodGet,
+		"/v1/categories/:id",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.getCategoryHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodPatch,
+		"/v1/categories/:id",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.updateCategoryHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodDelete,
+		"/v1/categories/:id",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.deleteCategoryHandler),
+			),
+		),
+	)
+
+	// Dishes
+	/*	router.Handler(
+			http.MethodPost,
+			"/v1/dishes",
+			app.authenticate(
+				app.requireOwner(
+					http.HandlerFunc(app.createDish),
+				),
+			),
+		)
+	*/
+	// -------------------------------------------------------------------------
+	// Customer Routes
+	// -------------------------------------------------------------------------
+
+	/*	router.Handler(
+			http.MethodPost,
+			"/v1/orders",
+			app.authenticate(
+				app.requireCustomer(
+					http.HandlerFunc(app.createOrder),
+				),
+			),
+		)
+	*/
+	// -------------------------------------------------------------------------
+	// Dishes
+	// -------------------------------------------------------------------------
+
+	router.Handler(
 		http.MethodPost,
 		"/v1/dishes",
 		app.authenticate(
@@ -61,19 +152,44 @@ func (app *application) routes() *httprouter.Router {
 		),
 	)
 
-	// -------------------------------------------------------------------------
-	// Customer Routes
-	// -------------------------------------------------------------------------
-
 	router.Handler(
-		http.MethodPost,
-		"/v1/orders",
+		http.MethodGet,
+		"/v1/dishes",
 		app.authenticate(
-			app.requireCustomer(
-				http.HandlerFunc(app.createOrder),
+			app.requireOwner(
+				http.HandlerFunc(app.listDishesHandler),
 			),
 		),
 	)
 
+	router.Handler(
+		http.MethodGet,
+		"/v1/dishes/:id",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.getDishHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodPatch,
+		"/v1/dishes/:id",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.updateDishHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodDelete,
+		"/v1/dishes/:id",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.deleteDishHandler),
+			),
+		),
+	)
 	return router
 }

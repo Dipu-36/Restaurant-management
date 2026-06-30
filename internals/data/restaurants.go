@@ -8,28 +8,18 @@ import (
 )
 
 type Restaurant struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-
-	Name string `json:"name"`
-
-	Email string `json:"email"`
-
-	Phone string `json:"phone"`
-
-	StreetAddress string `json:"street_address"`
-
-	OpeningTime time.Time `json:"opening_time"`
-
-	ClosingTime time.Time `json:"closing_time"`
-
-	DeliveryFee int64 `json:"delivery_fee"`
-
-	DeliveryRadius int32 `json:"delivery_radius"`
-
-	IsOpen bool `json:"is_open"`
-
-	Version int32 `json:"version"`
+	ID             int64     `json:"id"`
+	CreatedAt      time.Time `json:"created_at"`
+	Name           string    `json:"name"`
+	Email          string    `json:"email"`
+	Phone          string    `json:"phone"`
+	StreetAddress  string    `json:"street_address"`
+	OpeningTime    string    `json:"opening_time"`
+	ClosingTime    string    `json:"closing_time"`
+	DeliveryFee    int64     `json:"delivery_fee"`
+	DeliveryRadius int32     `json:"delivery_radius"`
+	IsOpen         bool      `json:"is_open"`
+	Version        int32     `json:"version"`
 }
 
 func ValidateRestaurant(v *validator.Validator, restaurant *Restaurant) {
@@ -81,12 +71,28 @@ func ValidateRestaurant(v *validator.Validator, restaurant *Restaurant) {
 		"delivery_radius",
 		"must be greater than zero",
 	)
+	opening, err1 := time.Parse("15:04", restaurant.OpeningTime)
+	closing, err2 := time.Parse("15:04", restaurant.ClosingTime)
 
 	v.Check(
-		restaurant.OpeningTime.Before(restaurant.ClosingTime),
+		err1 == nil,
 		"opening_time",
-		"must be before closing time",
+		"must be in HH:MM format",
 	)
+
+	v.Check(
+		err2 == nil,
+		"closing_time",
+		"must be in HH:MM format",
+	)
+
+	if err1 == nil && err2 == nil {
+		v.Check(
+			opening.Before(closing),
+			"opening_time",
+			"must be before closing time",
+		)
+	}
 }
 
 type RestaurantModel struct {

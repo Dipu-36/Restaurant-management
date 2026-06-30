@@ -68,7 +68,7 @@ func ValidateDish(v *validator.Validator, dish *Dish) {
 }
 
 type DishModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m DishModel) Insert(dish *Dish) error {

@@ -61,7 +61,7 @@ func GenerateToken(userID int64, ttl time.Duration, scope string) (*Token, error
 }
 
 type TokenModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m TokenModel) Insert(token *Token) error {

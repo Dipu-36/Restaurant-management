@@ -191,5 +191,58 @@ func (app *application) routes() *httprouter.Router {
 			),
 		),
 	)
+	// -------------------------------------------------------------------------
+	// Addresses
+	// -------------------------------------------------------------------------
+
+	router.Handler(
+		http.MethodPost,
+		"/v1/addresses",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.createAddressHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodGet,
+		"/v1/addresses",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.listAddressesHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodGet,
+		"/v1/addresses/:id",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.getAddressHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodPatch,
+		"/v1/addresses/:id",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.updateAddressHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodDelete,
+		"/v1/addresses/:id",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.deleteAddressHandler),
+			),
+		),
+	)
 	return router
 }

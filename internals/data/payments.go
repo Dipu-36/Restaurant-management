@@ -95,7 +95,7 @@ func ValidatePayment(v *validator.Validator, payment *Payment) {
 }
 
 type PaymentModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m PaymentModel) Insert(payment *Payment) error {

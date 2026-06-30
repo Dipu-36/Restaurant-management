@@ -8,12 +8,14 @@ import (
 )
 
 const (
-	// Order OrderStatus
-	OrderStatusPending   = "pending"
-	OrderStatusPreparing = "preparing"
-	OrderStatusReady     = "ready"
-	OrderStatusCompleted = "completed"
-	OrderStatusCancelled = "cancelled"
+	// Order Status
+	OrderStatusPending        = "pending"
+	OrderStatusAccepted       = "accepted"
+	OrderStatusPreparing      = "preparing"
+	OrderStatusReady          = "ready"
+	OrderStatusOutForDelivery = "out_for_delivery"
+	OrderStatusDelivered      = "delivered"
+	OrderStatusCancelled      = "cancelled"
 
 	// Order Type
 	OrderTypeDelivery = "delivery"
@@ -35,6 +37,45 @@ type Order struct {
 	Version           int32     `json:"version"`
 }
 
+func (o *Order) CalculateTotal() {
+	o.Total = o.Subtotal + o.DeliveryFee + o.Tax
+}
+
+func (o *Order) CanTransitionTo(newStatus string) bool {
+
+	switch o.OrderStatus {
+
+	case OrderStatusPending:
+		return newStatus == OrderStatusAccepted ||
+			newStatus == OrderStatusCancelled
+
+	case OrderStatusAccepted:
+		return newStatus == OrderStatusPreparing ||
+			newStatus == OrderStatusCancelled
+
+	case OrderStatusPreparing:
+		return newStatus == OrderStatusReady ||
+			newStatus == OrderStatusCancelled
+
+	case OrderStatusReady:
+		if o.OrderType == OrderTypePickup {
+			return newStatus == OrderStatusDelivered
+		}
+		return newStatus == OrderStatusOutForDelivery
+
+	case OrderStatusOutForDelivery:
+		return newStatus == OrderStatusDelivered
+
+	case OrderStatusDelivered:
+		return false
+
+	case OrderStatusCancelled:
+		return false
+	}
+
+	return false
+}
+
 func ValidateOrder(v *validator.Validator, order *Order) {
 
 	v.Check(
@@ -47,9 +88,11 @@ func ValidateOrder(v *validator.Validator, order *Order) {
 		validator.In(
 			order.OrderStatus,
 			OrderStatusPending,
+			OrderStatusAccepted,
 			OrderStatusPreparing,
 			OrderStatusReady,
-			OrderStatusCompleted,
+			OrderStatusOutForDelivery,
+			OrderStatusDelivered,
 			OrderStatusCancelled,
 		),
 		"status",
@@ -126,7 +169,7 @@ func ValidateOrder(v *validator.Validator, order *Order) {
 }
 
 type OrderModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m OrderModel) Insert(order *Order) error {

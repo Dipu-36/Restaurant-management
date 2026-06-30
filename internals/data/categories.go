@@ -36,7 +36,7 @@ func ValidateCategory(v *validator.Validator, category *Category) {
 }
 
 type CategoryModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m CategoryModel) Insert(category *Category) error {

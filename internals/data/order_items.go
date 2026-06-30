@@ -17,11 +17,15 @@ type OrderItem struct {
 
 	Quantity int32 `json:"quantity"`
 
-	UnitPrice int64 `json:"unit_price"`
+	PriceAtPurchase int64 `json:"price_at_purchase"`
 
 	Subtotal int64 `json:"subtotal"`
 
 	Version int32 `json:"version"`
+}
+
+func (i *OrderItem) CalculateSubtotal() {
+	i.Subtotal = int64(i.Quantity) * i.PriceAtPurchase
 }
 
 func ValidateOrderItem(v *validator.Validator, item *OrderItem) {
@@ -45,8 +49,8 @@ func ValidateOrderItem(v *validator.Validator, item *OrderItem) {
 	)
 
 	v.Check(
-		item.UnitPrice >= 0,
-		"unit_price",
+		item.PriceAtPurchase >= 0,
+		"price_at_purchase",
 		"must not be negative",
 	)
 
@@ -57,14 +61,14 @@ func ValidateOrderItem(v *validator.Validator, item *OrderItem) {
 	)
 
 	v.Check(
-		item.Subtotal == int64(item.Quantity)*item.UnitPrice,
+		item.Subtotal == int64(item.Quantity)*item.PriceAtPurchase,
 		"subtotal",
 		"must equal quantity × unit price",
 	)
 }
 
 type OrderItemModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m OrderItemModel) Insert(item *OrderItem) error {
@@ -75,7 +79,7 @@ func (m OrderItemModel) Insert(item *OrderItem) error {
 			order_id,
 			dish_id,
 			quantity,
-			unit_price,
+			price_at_purchase,
 			subtotal
 		)
 		VALUES
@@ -89,7 +93,7 @@ func (m OrderItemModel) Insert(item *OrderItem) error {
 		item.OrderID,
 		item.DishID,
 		item.Quantity,
-		item.UnitPrice,
+		item.PriceAtPurchase,
 		item.Subtotal,
 	}
 
@@ -113,7 +117,7 @@ func (m OrderItemModel) Get(id int64) (*OrderItem, error) {
 			order_id,
 			dish_id,
 			quantity,
-			unit_price,
+			price_at_purchase,
 			subtotal,
 			version
 		FROM order_items
@@ -128,7 +132,7 @@ func (m OrderItemModel) Get(id int64) (*OrderItem, error) {
 		&item.OrderID,
 		&item.DishID,
 		&item.Quantity,
-		&item.UnitPrice,
+		&item.PriceAtPurchase,
 		&item.Subtotal,
 		&item.Version,
 	)
@@ -158,7 +162,7 @@ func (m OrderItemModel) GetByOrderID(orderID int64) ([]*OrderItem, error) {
 			order_id,
 			dish_id,
 			quantity,
-			unit_price,
+			price_at_purchase,
 			subtotal,
 			version
 		FROM order_items
@@ -184,7 +188,7 @@ func (m OrderItemModel) GetByOrderID(orderID int64) ([]*OrderItem, error) {
 			&item.OrderID,
 			&item.DishID,
 			&item.Quantity,
-			&item.UnitPrice,
+			&item.PriceAtPurchase,
 			&item.Subtotal,
 			&item.Version,
 		)
@@ -215,7 +219,7 @@ func (m OrderItemModel) GetByDishID(dishID int64) ([]*OrderItem, error) {
 			order_id,
 			dish_id,
 			quantity,
-			unit_price,
+			price_at_purchase,
 			subtotal,
 			version
 		FROM order_items
@@ -241,7 +245,7 @@ func (m OrderItemModel) GetByDishID(dishID int64) ([]*OrderItem, error) {
 			&item.OrderID,
 			&item.DishID,
 			&item.Quantity,
-			&item.UnitPrice,
+			&item.PriceAtPurchase,
 			&item.Subtotal,
 			&item.Version,
 		)
@@ -265,7 +269,7 @@ func (m OrderItemModel) Update(item *OrderItem) error {
 		UPDATE order_items
 		SET
 			quantity = $1,
-			unit_price = $2,
+			price_at_purchase = $2,
 			subtotal = $3,
 			version = version + 1
 		WHERE id = $4
@@ -275,7 +279,7 @@ func (m OrderItemModel) Update(item *OrderItem) error {
 
 	args := []interface{}{
 		item.Quantity,
-		item.UnitPrice,
+		item.PriceAtPurchase,
 		item.Subtotal,
 		item.ID,
 		item.Version,
@@ -332,7 +336,7 @@ func (m OrderItemModel) GetAll() ([]*OrderItem, error) {
 			order_id,
 			dish_id,
 			quantity,
-			unit_price,
+			price_at_purchase,
 			subtotal,
 			version
 		FROM order_items
@@ -357,7 +361,7 @@ func (m OrderItemModel) GetAll() ([]*OrderItem, error) {
 			&item.OrderID,
 			&item.DishID,
 			&item.Quantity,
-			&item.UnitPrice,
+			&item.PriceAtPurchase,
 			&item.Subtotal,
 			&item.Version,
 		)
@@ -373,4 +377,19 @@ func (m OrderItemModel) GetAll() ([]*OrderItem, error) {
 	}
 
 	return items, nil
+}
+
+func (m OrderItemModel) DeleteByOrderID(orderID int64) error {
+
+	if orderID < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `
+		DELETE FROM order_items
+		WHERE order_id = $1
+	`
+
+	_, err := m.DB.Exec(query, orderID)
+	return err
 }

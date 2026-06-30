@@ -1,7 +1,6 @@
 package data
 
 import (
-	"database/sql"
 	"errors"
 )
 
@@ -23,7 +22,7 @@ type Models struct {
 	Tokens      TokenModel
 }
 
-func NewModels(db *sql.DB) Models {
+func NewModels(db DBTX) Models {
 	return Models{
 		Users:       UserModel{DB: db},
 		Restaurants: RestaurantModel{DB: db},

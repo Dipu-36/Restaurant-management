@@ -96,7 +96,7 @@ func ValidateRestaurant(v *validator.Validator, restaurant *Restaurant) {
 }
 
 type RestaurantModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m RestaurantModel) Get() (*Restaurant, error) {

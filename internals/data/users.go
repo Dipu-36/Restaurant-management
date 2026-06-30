@@ -62,7 +62,7 @@ func ValidateUser(v *validator.Validator, user *User) {
 }
 
 type UserModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m UserModel) Insert(user *User) error {

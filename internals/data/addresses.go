@@ -97,7 +97,7 @@ func ValidateAddress(v *validator.Validator, address *Address) {
 }
 
 type AddressModel struct {
-	DB *sql.DB
+	DB DBTX
 }
 
 func (m AddressModel) Insert(address *Address) error {

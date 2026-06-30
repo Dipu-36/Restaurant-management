@@ -9,14 +9,16 @@ import (
 func (app *application) routes() *httprouter.Router {
 	router := httprouter.New()
 
-	// Health Check
+	// -------------------------------------------------------------------------
+	// Public Routes
+	// -------------------------------------------------------------------------
+
 	router.HandlerFunc(
 		http.MethodGet,
 		"/v1/healthcheck",
 		app.healthCheckHandler,
 	)
 
-	// Authentication
 	router.HandlerFunc(
 		http.MethodPost,
 		"/v1/users",
@@ -35,20 +37,43 @@ func (app *application) routes() *httprouter.Router {
 		app.createAuthenticationTokenHandler,
 	)
 
-	// Restaurant
+	// -------------------------------------------------------------------------
+	// Owner Routes
+	// -------------------------------------------------------------------------
+
+	router.Handler(
+		http.MethodPost,
+		"/v1/categories",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.createCategory),
+			),
+		),
+	)
+
 	router.Handler(
 		http.MethodPost,
 		"/v1/dishes",
 		app.authenticate(
-			http.HandlerFunc(app.createDish),
+			app.requireOwner(
+				http.HandlerFunc(app.createDish),
+			),
 		),
 	)
 
-	// Future Routes
-	// router.Handler(http.MethodGet, "/v1/restaurants", app.authenticate(http.HandlerFunc(app.listRestaurants)))
-	// router.Handler(http.MethodPost, "/v1/orders", app.authenticate(http.HandlerFunc(app.createOrder)))
-	// router.Handler(http.MethodGet, "/v1/orders/:id", app.authenticate(http.HandlerFunc(app.getOrder)))
-	// router.Handler(http.MethodPost, "/v1/payments", app.authenticate(http.HandlerFunc(app.createPayment)))
+	// -------------------------------------------------------------------------
+	// Customer Routes
+	// -------------------------------------------------------------------------
+
+	router.Handler(
+		http.MethodPost,
+		"/v1/orders",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.createOrder),
+			),
+		),
+	)
 
 	return router
 }

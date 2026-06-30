@@ -117,3 +117,39 @@ func (app *application) inactiveAccountResponse(w http.ResponseWriter, r *http.R
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r *http.Request) {
+
+	message := "you must be authenticated to access this resource"
+
+	err := app.writeJSON(
+		w,
+		http.StatusUnauthorized,
+		envelope{
+			"error": message,
+		},
+		nil,
+	)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
+
+func (app *application) notPermittedResponse(w http.ResponseWriter, r *http.Request) {
+
+	message := "your account does not have the necessary permissions to access this resource"
+
+	err := app.writeJSON(
+		w,
+		http.StatusForbidden,
+		envelope{
+			"error": message,
+		},
+		nil,
+	)
+
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

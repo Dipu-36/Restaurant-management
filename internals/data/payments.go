@@ -26,24 +26,16 @@ const (
 )
 
 type Payment struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-
-	OrderID int64 `json:"order_id"`
-
-	Provider string `json:"provider"`
-
-	TransactionID string `json:"transaction_id"`
-
-	PaymentStatus string `json:"status"`
-
-	Method string `json:"method"`
-
-	Amount int64 `json:"amount"`
-
-	Currency string `json:"currency"`
-
-	Version int32 `json:"version"`
+	ID            int64     `json:"id"`
+	CreatedAt     time.Time `json:"created_at"`
+	OrderID       int64     `json:"order_id"`
+	Provider      string    `json:"provider"`
+	TransactionID string    `json:"transaction_id"`
+	PaymentStatus string    `json:"status"`
+	Method        string    `json:"method"`
+	Amount        int64     `json:"amount"`
+	Currency      string    `json:"currency"`
+	Version       int32     `json:"version"`
 }
 
 func ValidatePayment(v *validator.Validator, payment *Payment) {
@@ -66,7 +58,7 @@ func ValidatePayment(v *validator.Validator, payment *Payment) {
 
 	v.Check(
 		validator.In(
-			payment.Status,
+			payment.PaymentStatus,
 			PaymentStatusPending,
 			PaymentStatusSucceeded,
 			PaymentStatusFailed,
@@ -130,7 +122,7 @@ func (m PaymentModel) Insert(payment *Payment) error {
 		payment.OrderID,
 		payment.Provider,
 		payment.TransactionID,
-		payment.Status,
+		payment.PaymentStatus,
 		payment.Method,
 		payment.Amount,
 		payment.Currency,
@@ -173,7 +165,7 @@ func (m PaymentModel) Get(id int64) (*Payment, error) {
 		&payment.OrderID,
 		&payment.Provider,
 		&payment.TransactionID,
-		&payment.Status,
+		&payment.PaymentStatus,
 		&payment.Method,
 		&payment.Amount,
 		&payment.Currency,
@@ -222,7 +214,7 @@ func (m PaymentModel) GetByOrderID(orderID int64) (*Payment, error) {
 		&payment.OrderID,
 		&payment.Provider,
 		&payment.TransactionID,
-		&payment.Status,
+		&payment.PaymentStatus,
 		&payment.Method,
 		&payment.Amount,
 		&payment.Currency,
@@ -256,7 +248,7 @@ func (m PaymentModel) UpdateStatus(payment *Payment) error {
 
 	args := []interface{}{
 		payment.TransactionID,
-		payment.Status,
+		payment.PaymentStatus,
 		payment.ID,
 		payment.Version,
 	}
@@ -310,7 +302,7 @@ func (m PaymentModel) GetAll() ([]*Payment, error) {
 			&payment.OrderID,
 			&payment.Provider,
 			&payment.TransactionID,
-			&payment.Status,
+			&payment.PaymentStatus,
 			&payment.Method,
 			&payment.Amount,
 			&payment.Currency,
@@ -367,7 +359,7 @@ func (m PaymentModel) GetAllByStatus(status string) ([]*Payment, error) {
 			&payment.OrderID,
 			&payment.Provider,
 			&payment.TransactionID,
-			&payment.Status,
+			&payment.PaymentStatus,
 			&payment.Method,
 			&payment.Amount,
 			&payment.Currency,

@@ -26,7 +26,6 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 	v := validator.New()
 
 	data.ValidateEmail(v, input.Email)
-
 	data.ValidatePasswordPlaintext(v, input.Password)
 
 	if !v.Valid() {
@@ -44,7 +43,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		}
 		return
 	}
-	user, err := app.models.Users.GetByEmail(input.Email)
+
 	match, err := user.Password.Matches(input.Password)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -61,7 +60,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	token, err := app.jwtManager.Generate(
+	authenticationToken, err := app.jwtManager.Generate(
 		user.ID,
 		user.Role,
 	)
@@ -74,7 +73,7 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		w,
 		http.StatusCreated,
 		envelope{
-			"authentication_token": token,
+			"authentication_token": authenticationToken,
 		},
 		nil,
 	)

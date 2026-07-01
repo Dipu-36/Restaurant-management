@@ -19,7 +19,6 @@ type User struct {
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Phone     string    `json:"phone"`
-	Address   string    `json:"address"`
 	Role      string    `json:"role"`
 	Activated bool      `json:"activated"`
 	Version   int32     `json:"version"`
@@ -47,9 +46,6 @@ func ValidateUser(v *validator.Validator, user *User) {
 	v.Check(len(user.Phone) >= 10, "phone", "must be a valid phone number")
 	v.Check(len(user.Phone) <= 15, "phone", "must be a valid phone number")
 
-	v.Check(user.Address != "", "address", "must be provided")
-	v.Check(len(user.Address) <= 500, "address", "must not be more than 500 bytes long")
-
 	v.Check(user.Role == "customer" || user.Role == "owner", "role", "must be customer or owner")
 
 	if user.Password.plaintext != nil {
@@ -74,13 +70,12 @@ func (m UserModel) Insert(user *User) error {
 			email,
 			password_hash,
 			phone,
-			address,
 			role,
 			activated
 		)
 		VALUES
 		(
-			$1,$2,$3,$4,$5,$6,$7
+			$1,$2,$3,$4,$5,$6
 		)
 		RETURNING id, created_at, version
 	`
@@ -90,7 +85,6 @@ func (m UserModel) Insert(user *User) error {
 		user.Email,
 		user.Password.hash,
 		user.Phone,
-		user.Address,
 		user.Role,
 		user.Activated,
 	}
@@ -124,7 +118,7 @@ func (m UserModel) Get(id int64) (*User, error) {
 
 	query := `
 		SELECT id, created_at, name, email, password_hash,
-		       phone, address, role, activated, version
+		       phone, role, activated, version
 		FROM users
 		WHERE id = $1`
 
@@ -137,7 +131,6 @@ func (m UserModel) Get(id int64) (*User, error) {
 		&user.Email,
 		&user.Password.hash,
 		&user.Phone,
-		&user.Address,
 		&user.Role,
 		&user.Activated,
 		&user.Version,
@@ -158,7 +151,7 @@ func (m UserModel) Get(id int64) (*User, error) {
 func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 		SELECT id, created_at, name, email, password_hash,
-		       phone, address, role, activated, version
+		       phone, role, activated, version
 		FROM users
 		WHERE email = $1`
 
@@ -171,7 +164,6 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 		&user.Email,
 		&user.Password.hash,
 		&user.Phone,
-		&user.Address,
 		&user.Role,
 		&user.Activated,
 		&user.Version,
@@ -196,12 +188,11 @@ func (m UserModel) Update(user *User) error {
 		    email = $2,
 		    password_hash = $3,
 		    phone = $4,
-		    address = $5,
-		    role = $6,
-		    activated = $7,
+		    role = $5,
+		    activated = $6,
 		    version = version + 1
-		WHERE id = $8
-		AND version = $9
+		WHERE id = $7
+		AND version = $8
 		RETURNING version`
 
 	args := []interface{}{
@@ -209,7 +200,6 @@ func (m UserModel) Update(user *User) error {
 		user.Email,
 		user.Password.hash,
 		user.Phone,
-		user.Address,
 		user.Role,
 		user.Activated,
 		user.ID,

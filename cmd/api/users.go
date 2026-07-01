@@ -32,7 +32,6 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		Name:      input.Name,
 		Email:     input.Email,
 		Phone:     input.Phone,
-		Address:   input.Address,
 		Role:      input.Role,
 		Activated: false,
 	}

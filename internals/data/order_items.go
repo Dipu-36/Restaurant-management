@@ -31,12 +31,6 @@ func (i *OrderItem) CalculateSubtotal() {
 func ValidateOrderItem(v *validator.Validator, item *OrderItem) {
 
 	v.Check(
-		item.OrderID > 0,
-		"order_id",
-		"must be provided",
-	)
-
-	v.Check(
 		item.DishID > 0,
 		"dish_id",
 		"must be provided",

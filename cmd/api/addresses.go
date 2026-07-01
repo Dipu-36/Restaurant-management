@@ -8,8 +8,8 @@ import (
 )
 
 type createAddressInput struct {
-	StreetLine1 string `json:"street_line_1"`
-	StreetLine2 string `json:"street_line_2"`
+	StreetLine1 string `json:"street_line1"`
+	StreetLine2 string `json:"street_line2"`
 	City        string `json:"city"`
 	State       string `json:"state"`
 	PostalCode  string `json:"postal_code"`

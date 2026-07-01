@@ -77,7 +77,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 		// Client sent correct feilds but wrong type like table_number: four instead of 4
 		case errors.As(err, &unmarshalTypeError):
 			if unmarshalTypeError.Field != "" {
-				return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Offset)
+				return fmt.Errorf("body contains incorrect JSON type for field %q", unmarshalTypeError.Field)
 			}
 			return fmt.Errorf("body contains incorrect JSON type (at charcter %d)", unmarshalTypeError.Offset)
 
@@ -86,8 +86,8 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 			return errors.New("body must not be empty")
 
 		case strings.HasPrefix(err.Error(), "json: unknown field"):
-			fieldName := strings.TrimPrefix(err.Error(), "json: unkown field")
-			return fmt.Errorf("body contains unkown key %s", fieldName)
+			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field")
+			return fmt.Errorf("body contains unknown key %s", fieldName)
 
 		case err.Error() == "http: request body too large":
 			return fmt.Errorf("body must not be larger than %d bytes", maxBytes)
@@ -101,7 +101,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 
 	// Decoding 2nd time to catch the clients if they are sending multiple JSON vvalues in one body
 	err = dec.Decode(&struct{}{})
-	if err != nil {
+	if !errors.Is(err, io.EOF) {
 		return errors.New("body must only contain a single JSON value")
 	}
 

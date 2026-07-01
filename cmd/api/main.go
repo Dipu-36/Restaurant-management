@@ -35,6 +35,7 @@ type application struct {
 	config     config
 	logger     *log.Logger
 	models     data.Models
+	db         *sql.DB
 	jwtManager *auth.JWTManager
 }
 
@@ -75,6 +76,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		models: data.NewModels(db),
+		db:     db,
 		jwtManager: &auth.JWTManager{
 			SecretKey: []byte(cfg.jwt.secret),
 			Issuer:    "restaurant-api",

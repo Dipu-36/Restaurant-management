@@ -114,43 +114,22 @@ func (app *application) routes() *httprouter.Router {
 	)
 
 	// Dishes
-	/*	router.Handler(
-			http.MethodPost,
-			"/v1/dishes",
-			app.authenticate(
-				app.requireOwner(
-					http.HandlerFunc(app.createDish),
-				),
-			),
-		)
-	*/
 	// -------------------------------------------------------------------------
 	// Customer Routes
 	// -------------------------------------------------------------------------
 
-	/*	router.Handler(
-			http.MethodPost,
-			"/v1/orders",
-			app.authenticate(
-				app.requireCustomer(
-					http.HandlerFunc(app.createOrder),
-				),
-			),
-		)
-	*/
-	// -------------------------------------------------------------------------
-	// Dishes
-	// -------------------------------------------------------------------------
-
 	router.Handler(
 		http.MethodPost,
-		"/v1/dishes",
+		"/v1/orders",
 		app.authenticate(
-			app.requireOwner(
-				http.HandlerFunc(app.createDish),
+			app.requireCustomer(
+				http.HandlerFunc(app.createOrderHandler),
 			),
 		),
 	)
+	// -------------------------------------------------------------------------
+	// Dishes
+	// -------------------------------------------------------------------------
 
 	router.Handler(
 		http.MethodGet,
@@ -241,6 +220,51 @@ func (app *application) routes() *httprouter.Router {
 		app.authenticate(
 			app.requireCustomer(
 				http.HandlerFunc(app.deleteAddressHandler),
+			),
+		),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/v1/orders/:id",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.getOrderHandler),
+			),
+		),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/v1/orders",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.listOrdersHandler),
+			),
+		),
+	)
+	router.Handler(
+		http.MethodPatch,
+		"/v1/orders/:id/status",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.updateOrderStatusHandler),
+			),
+		),
+	)
+	router.Handler(
+		http.MethodPatch,
+		"/v1/orders/:id/cancel",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.cancelOrderHandler),
+			),
+		),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/v1/admin/orders",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.listAllOrdersHandler),
 			),
 		),
 	)

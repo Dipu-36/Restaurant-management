@@ -10,6 +10,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -94,9 +96,42 @@ func main() {
 
 	logger.Printf("Starting %s server on %d:", cfg.env, cfg.port)
 
-	err = srv.ListenAndServe()
-	logger.Fatal(err)
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			logger.Fatal(err)
+		}
+	}()
 
+	quit := make(chan os.Signal, 1)
+
+	signal.Notify(
+		quit,
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+
+	<-quit
+
+	logger.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		30*time.Second,
+	)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatal(err)
+	}
+
+	logger.Println("Closing database connection...")
+
+	if err := db.Close(); err != nil {
+		logger.Fatal(err)
+	}
+
+	logger.Println("Server stopped gracefully.")
 }
 
 // openDB() helper returns a sql.DB connection pool
@@ -124,10 +159,6 @@ func openDB(cfg config) (*sql.DB, error) {
 
 	// Set the maximum idle timeout
 	db.SetConnMaxIdleTime(duration)
-
-	// a context with 5 second timeout deadline
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	// Using PingContext() to establish a new connection to the Database passing in the conetext we
 	// created above as a parameter, if the connection couldn't be established succesfully within

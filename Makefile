@@ -71,3 +71,23 @@ vet:
 .PHONY: test
 test:
 	go test ./...
+
+# -----------------------------------------------------------------------------
+# Docker
+# -----------------------------------------------------------------------------
+
+.PHONY: docker-build
+docker-build:
+	docker compose build
+
+.PHONY: up
+up:
+	docker compose up --build
+
+.PHONY: down
+down:
+	docker compose down
+
+.PHONY: logs
+logs:
+	docker compose logs -f

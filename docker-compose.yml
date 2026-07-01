@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+
+    container_name: restaurant-db
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: restaurant
+      POSTGRES_USER: restaurant
+      POSTGRES_PASSWORD: password
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: .
+
+    container_name: restaurant-api
+
+    depends_on:
+      - db
+
+    environment:
+      RESTAURANT_DB_DSN: postgres://restaurant:password@db:5432/restaurant?sslmode=disable
+
+    ports:
+      - "4000:4000"
+
+volumes:
+  postgres_data:

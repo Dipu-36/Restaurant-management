@@ -268,5 +268,16 @@ func (app *application) routes() *httprouter.Router {
 			),
 		),
 	)
+
+	router.Handler(
+		http.MethodGet,
+		"/v1/admin/dashboard",
+		app.authenticate(
+			app.requireOwner(
+				http.HandlerFunc(app.getDashboardHandler),
+			),
+		),
+	)
+
 	return router
 }

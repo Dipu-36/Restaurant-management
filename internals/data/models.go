@@ -20,6 +20,7 @@ type Models struct {
 	OrderItems  OrderItemModel
 	Payments    PaymentModel
 	Tokens      TokenModel
+	Dashboard   DashboardModel
 }
 
 func NewModels(db DBTX) Models {
@@ -33,5 +34,6 @@ func NewModels(db DBTX) Models {
 		OrderItems:  OrderItemModel{DB: db},
 		Payments:    PaymentModel{DB: db},
 		Tokens:      TokenModel{DB: db},
+		Dashboard:   DashboardModel{DB: db},
 	}
 }

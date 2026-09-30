@@ -10,7 +10,7 @@ func (app *application) routes() *httprouter.Router {
 	router := httprouter.New()
 
 	// -------------------------------------------------------------------------
-	// Public Routes
+	// Public Routes (no auth required)
 	// -------------------------------------------------------------------------
 
 	router.HandlerFunc(
@@ -37,21 +37,42 @@ func (app *application) routes() *httprouter.Router {
 		app.createAuthenticationTokenHandler,
 	)
 
+	// Public menu browsing — customers and guests need these
+	router.HandlerFunc(
+		http.MethodGet,
+		"/v1/categories",
+		app.listCategoriesHandler,
+	)
+
+	router.HandlerFunc(
+		http.MethodGet,
+		"/v1/dishes",
+		app.listDishesHandler,
+	)
+
+	router.HandlerFunc(
+		http.MethodGet,
+		"/v1/dishes/:id",
+		app.getDishHandler,
+	)
+
+	router.HandlerFunc(
+		http.MethodGet,
+		"/v1/categories/:id",
+		app.getCategoryHandler,
+	)
+
+	router.HandlerFunc(
+		http.MethodGet,
+		"/v1/restaurant",
+		app.getRestaurantHandler,
+	)
+
 	// -------------------------------------------------------------------------
 	// Owner Routes
 	// -------------------------------------------------------------------------
 
-	// Restaurant
-	router.Handler(
-		http.MethodGet,
-		"/v1/restaurant",
-		app.authenticate(
-			app.requireOwner(
-				http.HandlerFunc(app.getRestaurantHandler),
-			),
-		),
-	)
-
+	// Restaurant — only updates need owner protection
 	router.Handler(
 		http.MethodPatch,
 		"/v1/restaurant",
@@ -62,33 +83,13 @@ func (app *application) routes() *httprouter.Router {
 		),
 	)
 
-	// Categories
+	// Categories — create, update, delete are owner-only
 	router.Handler(
 		http.MethodPost,
 		"/v1/categories",
 		app.authenticate(
 			app.requireOwner(
 				http.HandlerFunc(app.createCategory),
-			),
-		),
-	)
-
-	router.Handler(
-		http.MethodGet,
-		"/v1/categories",
-		app.authenticate(
-			app.requireOwner(
-				http.HandlerFunc(app.listCategoriesHandler),
-			),
-		),
-	)
-
-	router.Handler(
-		http.MethodGet,
-		"/v1/categories/:id",
-		app.authenticate(
-			app.requireOwner(
-				http.HandlerFunc(app.getCategoryHandler),
 			),
 		),
 	)
@@ -113,40 +114,13 @@ func (app *application) routes() *httprouter.Router {
 		),
 	)
 
-	// Dishes
-	// -------------------------------------------------------------------------
-	// Customer Routes
-	// -------------------------------------------------------------------------
-
+	// Dishes — create, update, delete are owner-only
 	router.Handler(
 		http.MethodPost,
-		"/v1/orders",
-		app.authenticate(
-			app.requireCustomer(
-				http.HandlerFunc(app.createOrderHandler),
-			),
-		),
-	)
-	// -------------------------------------------------------------------------
-	// Dishes
-	// -------------------------------------------------------------------------
-
-	router.Handler(
-		http.MethodGet,
 		"/v1/dishes",
 		app.authenticate(
 			app.requireOwner(
-				http.HandlerFunc(app.listDishesHandler),
-			),
-		),
-	)
-
-	router.Handler(
-		http.MethodGet,
-		"/v1/dishes/:id",
-		app.authenticate(
-			app.requireOwner(
-				http.HandlerFunc(app.getDishHandler),
+				http.HandlerFunc(app.createDish),
 			),
 		),
 	)
@@ -170,10 +144,53 @@ func (app *application) routes() *httprouter.Router {
 			),
 		),
 	)
+
 	// -------------------------------------------------------------------------
-	// Addresses
+	// Customer Routes
 	// -------------------------------------------------------------------------
 
+	// Orders
+	router.Handler(
+		http.MethodPost,
+		"/v1/orders",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.createOrderHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodGet,
+		"/v1/orders",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.listOrdersHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodGet,
+		"/v1/orders/:id",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.getOrderHandler),
+			),
+		),
+	)
+
+	router.Handler(
+		http.MethodPatch,
+		"/v1/orders/:id/cancel",
+		app.authenticate(
+			app.requireCustomer(
+				http.HandlerFunc(app.cancelOrderHandler),
+			),
+		),
+	)
+
+	// Addresses
 	router.Handler(
 		http.MethodPost,
 		"/v1/addresses",
@@ -223,24 +240,11 @@ func (app *application) routes() *httprouter.Router {
 			),
 		),
 	)
-	router.Handler(
-		http.MethodGet,
-		"/v1/orders/:id",
-		app.authenticate(
-			app.requireCustomer(
-				http.HandlerFunc(app.getOrderHandler),
-			),
-		),
-	)
-	router.Handler(
-		http.MethodGet,
-		"/v1/orders",
-		app.authenticate(
-			app.requireCustomer(
-				http.HandlerFunc(app.listOrdersHandler),
-			),
-		),
-	)
+
+	// -------------------------------------------------------------------------
+	// Owner-Only Admin Routes
+	// -------------------------------------------------------------------------
+
 	router.Handler(
 		http.MethodPatch,
 		"/v1/orders/:id/status",
@@ -250,15 +254,7 @@ func (app *application) routes() *httprouter.Router {
 			),
 		),
 	)
-	router.Handler(
-		http.MethodPatch,
-		"/v1/orders/:id/cancel",
-		app.authenticate(
-			app.requireCustomer(
-				http.HandlerFunc(app.cancelOrderHandler),
-			),
-		),
-	)
+
 	router.Handler(
 		http.MethodGet,
 		"/v1/admin/orders",

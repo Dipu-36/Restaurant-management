@@ -4,3 +4,5 @@ bin/
 # env variables
 .env
 
+# Add to existing .gitignore
+.env.local
